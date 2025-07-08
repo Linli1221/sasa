@@ -68,7 +68,7 @@
     {
       "source": "/home",
       "destination": "/",
-      "permanent": true
+      "statusCode": 301
     }
   ],
   "rewrites": [

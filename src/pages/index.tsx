@@ -5,7 +5,14 @@ import { useAppStore } from '@/store/app-store'
 import { formatDate, formatRelativeTime } from '@/lib/utils'
 import type { Project } from '@/types'
 
-export default function HomePage() {
+interface AppConfig {
+  appName: string
+  appVersion: string
+  enableRegistration: boolean
+  enableSocialLogin: boolean
+}
+
+export default function HomePage({ appConfig }: { appConfig: AppConfig }) {
   const { 
     user, 
     projects, 
@@ -29,10 +36,25 @@ export default function HomePage() {
       setLoading(true)
       setError(null)
       
-      // 这里应该调用 API 获取用户项目
-      // const userProjects = await DatabaseService.getProjectsByUserId(user.id)
+      // 调用 API 获取用户项目
+      const response = await fetch('/api/projects', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('获取项目列表失败')
+      }
+
+      const data = await response.json()
+      setProjects(data.projects || [])
+      setRecentProjects((data.projects || []).slice(0, 3))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '加载项目失败')
       
-      // 模拟数据
+      // 使用模拟数据作为降级方案
       const mockProjects: Project[] = [
         {
           id: '1',
@@ -62,8 +84,6 @@ export default function HomePage() {
       
       setProjects(mockProjects)
       setRecentProjects(mockProjects.slice(0, 3))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载项目失败')
     } finally {
       setLoading(false)
     }
@@ -98,7 +118,7 @@ export default function HomePage() {
     return (
       <>
         <Head>
-          <title>AI 小说生成工具</title>
+          <title>{appConfig.appName}</title>
           <meta name="description" content="智能小说创作助手，助您轻松创作精彩小说" />
         </Head>
         
@@ -107,7 +127,7 @@ export default function HomePage() {
           <div className="container-wide py-20">
             <div className="text-center">
               <h1 className="text-5xl font-bold text-gray-900 mb-6">
-                AI 小说生成工具
+                {appConfig.appName}
               </h1>
               <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
                 结合人工智能与创作灵感，打造全新的小说创作体验。
@@ -183,14 +203,63 @@ export default function HomePage() {
               <p className="text-xl mb-6 opacity-90">
                 立即注册，体验AI辅助创作的无限可能
               </p>
-              <Link 
-                href="/auth/register"
-                className="btn bg-white text-blue-600 hover:bg-gray-100 btn-lg"
-              >
-                免费注册
-              </Link>
+              {appConfig.enableRegistration && (
+                <Link 
+                  href="/auth/register"
+                  className="btn bg-white text-blue-600 hover:bg-gray-100 btn-lg"
+                >
+                  免费注册
+                </Link>
+              )}
             </div>
           </div>
+
+          {/* Footer */}
+          <footer className="bg-gray-900 text-white py-12">
+            <div className="container-wide">
+              <div className="grid md:grid-cols-4 gap-8">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">{appConfig.appName}</h3>
+                  <p className="text-gray-400">
+                    基于人工智能的智能小说创作平台
+                  </p>
+                  <p className="text-gray-500 text-sm mt-2">
+                    版本 {appConfig.appVersion}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-md font-semibold mb-4">功能特色</h4>
+                  <ul className="space-y-2 text-gray-400">
+                    <li>AI智能生成</li>
+                    <li>世界观构建</li>
+                    <li>角色管理</li>
+                    <li>剧情设计</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="text-md font-semibold mb-4">帮助支持</h4>
+                  <ul className="space-y-2 text-gray-400">
+                    <li><Link href="/help">使用指南</Link></li>
+                    <li><Link href="/faq">常见问题</Link></li>
+                    <li><Link href="/contact">联系我们</Link></li>
+                    <li><Link href="/feedback">意见反馈</Link></li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="text-md font-semibold mb-4">关于我们</h4>
+                  <ul className="space-y-2 text-gray-400">
+                    <li><Link href="/about">关于项目</Link></li>
+                    <li><Link href="/privacy">隐私政策</Link></li>
+                    <li><Link href="/terms">服务条款</Link></li>
+                    <li><Link href="/changelog">更新日志</Link></li>
+                  </ul>
+                </div>
+              </div>
+              <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 {appConfig.appName}. All rights reserved.</p>
+              </div>
+            </div>
+          </footer>
         </div>
       </>
     )
@@ -199,7 +268,7 @@ export default function HomePage() {
   return (
     <>
       <Head>
-        <title>工作台 - AI 小说生成工具</title>
+        <title>工作台 - {appConfig.appName}</title>
         <meta name="description" content="您的创作工作台" />
       </Head>
 
@@ -394,4 +463,20 @@ export default function HomePage() {
       </div>
     </>
   )
+}
+
+// 服务端获取配置
+export async function getServerSideProps() {
+  const appConfig: AppConfig = {
+    appName: process.env.APP_NAME || 'AI小说生成工具',
+    appVersion: process.env.APP_VERSION || '1.0.0',
+    enableRegistration: process.env.ENABLE_USER_REGISTRATION === 'true',
+    enableSocialLogin: process.env.ENABLE_SOCIAL_LOGIN === 'true',
+  }
+
+  return {
+    props: {
+      appConfig,
+    },
+  }
 }

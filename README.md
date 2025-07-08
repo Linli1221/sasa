@@ -58,8 +58,9 @@ ai-novel-generator/
 │   ├── hooks/            # 自定义 Hooks
 │   ├── lib/              # 工具库
 │   │   ├── ai-service.ts # AI 生成服务
+│   │   ├── cache-service.ts # 缓存服务
+│   │   ├── config.ts     # 配置管理
 │   │   ├── database.ts   # 数据库连接服务
-│   │   ├── kv-storage.ts # KV 存储服务（备用）
 │   │   └── utils.ts      # 工具函数
 │   ├── pages/            # Next.js 页面
 │   ├── store/            # 状态管理
@@ -146,20 +147,18 @@ cp .env.local.example .env.local
 ```env
 # 数据库配置
 DB_TYPE=postgresql
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=ai_novel
-DB_USER=ai_novel_user
-DB_PASSWORD=your_password
+DATABASE_URL=postgresql://ai_novel_user:your_password@localhost:5432/ai_novel
 
 # Redis 配置
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-REDIS_DB=0
+REDIS_URL=redis://localhost:6379/0
 
 # AI 服务配置
 AI_API_KEY=your_openai_api_key
+
+# 应用配置
+APP_NAME=AI小说生成工具
+APP_VERSION=1.0.0
+JWT_SECRET=your_jwt_secret_key_here
 ```
 
 5. **启动开发服务器**
@@ -215,6 +214,42 @@ erDiagram
 
 ## 🔧 配置说明
 
+### 环境变量配置
+
+项目使用统一的配置管理系统，所有配置通过环境变量进行设置，不使用 `NEXT_PUBLIC_` 前缀：
+
+#### 必需配置
+```env
+# 数据库连接
+DATABASE_URL=postgresql://user:pass@host:port/db
+REDIS_URL=redis://[:pass]@host:port/db
+
+# 安全密钥
+JWT_SECRET=your_jwt_secret_key
+SESSION_SECRET=your_session_secret_key
+
+# AI 服务
+AI_API_KEY=your_openai_api_key
+```
+
+#### 可选配置
+```env
+# 应用信息
+APP_NAME=AI小说生成工具
+APP_VERSION=1.0.0
+APP_ENV=development
+
+# 功能开关
+ENABLE_USER_REGISTRATION=true
+ENABLE_AI_GENERATION=true
+ENABLE_EMAIL_VERIFICATION=false
+
+# AI 模型参数
+AI_MODEL=gpt-3.5-turbo
+AI_TEMPERATURE=0.8
+AI_TOP_P=0.9
+```
+
 ### EdgeOne Pages 配置
 项目根目录的 `edgeone.json` 文件包含了部署配置：
 - 构建命令和输出目录设置
@@ -241,6 +276,12 @@ erDiagram
 - 使用 Prettier 格式化代码
 - 采用 Conventional Commits 提交规范
 
+### 配置管理
+- 使用统一的配置管理服务 (`src/lib/config.ts`)
+- 避免在前端代码中硬编码配置值
+- 所有敏感信息仅在服务端使用
+- 提供配置验证和错误提示
+
 ### 组件开发
 - 使用函数式组件和 Hooks
 - 遵循单一职责原则
@@ -265,6 +306,7 @@ erDiagram
 - [x] 数据库设计和连接
 - [x] Redis 缓存集成
 - [x] AI 生成服务集成
+- [x] 统一配置管理系统
 - [x] 用户界面框架
 - [x] 类型定义系统
 
@@ -283,6 +325,26 @@ erDiagram
 - [ ] 移动端适配
 - [ ] 多语言支持
 - [ ] 插件系统
+
+## 🔒 安全特性
+
+### 数据安全
+- 所有敏感配置仅在服务端使用
+- 数据库连接加密传输
+- JWT 令牌安全验证
+- 用户数据隔离
+
+### API 安全
+- CORS 跨域保护
+- 请求频率限制
+- 输入数据验证
+- 错误信息脱敏
+
+### 部署安全
+- 环境变量隔离
+- SSL/TLS 加密传输
+- 静态资源 CDN 分发
+- 自动安全更新
 
 ## 🤝 贡献指南
 
@@ -335,6 +397,9 @@ A: 可以，按照快速开始部分的步骤配置本地环境即可。
 **Q: 如何备份数据？**
 A: 请参考 DEPLOYMENT.md 中的备份和恢复章节。
 
+**Q: 为什么不使用 NEXT_PUBLIC 环境变量？**
+A: 为了安全考虑，所有配置都在服务端管理，避免敏感信息暴露到客户端。
+
 ## 🙏 致谢
 
 感谢以下开源项目和服务：
@@ -366,3 +431,4 @@ A: 请参考 DEPLOYMENT.md 中的备份和恢复章节。
 - 📱 **响应式设计**：支持各种设备尺寸
 - 🌍 **国际化准备**：支持多语言扩展
 - ⚡ **性能优化**：缓存策略和数据库优化
+- 🔒 **安全配置**：统一配置管理和安全防护

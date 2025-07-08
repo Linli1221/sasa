@@ -1,5 +1,5 @@
 // EdgeOne Pages Function for AI text generation
-// 使用 Service URI 连接数据库，不依赖 KV 存储
+// 使用统一配置服务，不依赖 NEXT_PUBLIC 变量
 
 export async function onRequestPost({ request, env }) {
   try {
@@ -255,22 +255,21 @@ function getPacingText(pacing) {
 async function generateWithAI(prompt, settings, env) {
   try {
     // 从环境变量获取 AI 服务配置
-    const aiApiUrl = env.AI_API_URL || 'https://api.openai.com/v1/chat/completions'
-    const aiApiKey = env.AI_API_KEY
+    const aiConfig = getAIConfig(env)
     
-    if (!aiApiKey) {
+    if (!aiConfig.apiKey) {
       console.error('AI API key not configured')
       return generateMockContent(settings)
     }
     
-    const response = await fetch(aiApiUrl, {
+    const response = await fetch(aiConfig.apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${aiApiKey}`
+        'Authorization': `Bearer ${aiConfig.apiKey}`
       },
       body: JSON.stringify({
-        model: env.AI_MODEL || 'gpt-3.5-turbo',
+        model: aiConfig.model,
         messages: [
           {
             role: 'system',
@@ -282,10 +281,10 @@ async function generateWithAI(prompt, settings, env) {
           }
         ],
         max_tokens: Math.min(settings.target_words * 2, 4000),
-        temperature: parseFloat(env.AI_TEMPERATURE || '0.8'),
-        top_p: parseFloat(env.AI_TOP_P || '0.9'),
-        frequency_penalty: parseFloat(env.AI_FREQUENCY_PENALTY || '0.1'),
-        presence_penalty: parseFloat(env.AI_PRESENCE_PENALTY || '0.1')
+        temperature: aiConfig.temperature,
+        top_p: aiConfig.topP,
+        frequency_penalty: aiConfig.frequencyPenalty,
+        presence_penalty: aiConfig.presencePenalty
       })
     })
     
@@ -300,6 +299,19 @@ async function generateWithAI(prompt, settings, env) {
   } catch (error) {
     console.error('AI generation error:', error)
     return generateMockContent(settings)
+  }
+}
+
+// 获取 AI 配置
+function getAIConfig(env) {
+  return {
+    apiUrl: env.AI_API_URL || 'https://api.openai.com/v1/chat/completions',
+    apiKey: env.AI_API_KEY || env.OPENAI_API_KEY || '',
+    model: env.AI_MODEL || 'gpt-3.5-turbo',
+    temperature: parseFloat(env.AI_TEMPERATURE || '0.8'),
+    topP: parseFloat(env.AI_TOP_P || '0.9'),
+    frequencyPenalty: parseFloat(env.AI_FREQUENCY_PENALTY || '0.1'),
+    presencePenalty: parseFloat(env.AI_PRESENCE_PENALTY || '0.1')
   }
 }
 
@@ -434,16 +446,35 @@ export async function onRequestOptions() {
 }
 
 // 健康检查接口
-export async function onRequestGet() {
+export async function onRequestGet({ env }) {
+  const config = getAppConfig(env)
+  
   return new Response(JSON.stringify({
     status: 'healthy',
     service: 'ai-generation',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    version: config.appVersion,
+    name: config.appName,
+    features: {
+      aiGeneration: config.enableAiGeneration,
+      registration: config.enableRegistration,
+      socialLogin: config.enableSocialLogin
+    }
   }), {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*'
     }
   })
+}
+
+// 获取应用配置
+function getAppConfig(env) {
+  return {
+    appName: env.APP_NAME || 'AI小说生成工具',
+    appVersion: env.APP_VERSION || '1.0.0',
+    enableAiGeneration: env.ENABLE_AI_GENERATION !== 'false',
+    enableRegistration: env.ENABLE_USER_REGISTRATION === 'true',
+    enableSocialLogin: env.ENABLE_SOCIAL_LOGIN === 'true'
+  }
 }
