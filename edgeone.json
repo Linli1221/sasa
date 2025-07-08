@@ -1,10 +1,80 @@
 {
   "name": "ai-novel-generator",
-  "version": "1.0.0",
-  "rewrites": [
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": "./out",
+  "nodeVersion": "20.18.0",
+  "headers": [
     {
       "source": "/*",
-      "destination": "/index.html"
+      "headers": [
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Cache-Control", "value": "max-age=3600" }
+      ]
+    },
+    {
+      "source": "/static/*",
+      "headers": [
+        { "key": "Cache-Control", "value": "max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/_next/static/*",
+      "headers": [
+        { "key": "Cache-Control", "value": "max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/api/*",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    }
+  ],
+  "caches": [
+    {
+      "source": "/static/*",
+      "cacheTtl": 31536000
+    },
+    {
+      "source": "/_next/static/*",
+      "cacheTtl": 31536000
+    },
+    {
+      "source": "/*.ico",
+      "cacheTtl": 86400
+    },
+    {
+      "source": "/*.png",
+      "cacheTtl": 86400
+    },
+    {
+      "source": "/*.jpg",
+      "cacheTtl": 86400
+    },
+    {
+      "source": "/*.svg",
+      "cacheTtl": 86400
+    },
+    {
+      "source": "/api/*",
+      "cacheTtl": 0
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/home",
+      "destination": "/",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/health",
+      "destination": "/api/health"
     }
   ]
 }
